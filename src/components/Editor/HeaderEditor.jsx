@@ -421,6 +421,31 @@ const HeaderEditor = ({
                           </Box>
                         </Box>
                       </MenuItem>
+                      <MenuItem value="aurora">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Box sx={{ 
+                            width: 40, 
+                            height: 30, 
+                            border: '2px solid #9c27b0',
+                            borderRadius: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '10px',
+                            fontWeight: 'bold',
+                            color: '#9c27b0',
+                            background: 'linear-gradient(135deg, rgba(156, 39, 176, 0.1), rgba(156, 39, 176, 0.3))'
+                          }}>
+                            AUR
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Аврора</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Навигация слева, логотип справа. Мобильное гамбургер-меню
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
