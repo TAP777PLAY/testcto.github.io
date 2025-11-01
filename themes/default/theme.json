@@ -1,0 +1,47 @@
+{
+  "name": "Default Theme",
+  "slug": "default",
+  "version": "1.0.0",
+  "author": "SiteBuilder",
+  "description": "Clean and modern default theme",
+  "tags": ["modern", "minimal", "professional"],
+  "colors": {
+    "primary": "#3B82F6",
+    "secondary": "#10B981",
+    "accent": "#8B5CF6",
+    "background": "#FFFFFF",
+    "foreground": "#1F2937",
+    "muted": "#F3F4F6",
+    "border": "#E5E7EB"
+  },
+  "typography": {
+    "fontFamily": {
+      "heading": "'Inter', system-ui, sans-serif",
+      "body": "'Inter', system-ui, sans-serif"
+    },
+    "fontSize": {
+      "base": "16px",
+      "scale": 1.25
+    },
+    "lineHeight": {
+      "tight": 1.25,
+      "normal": 1.5,
+      "relaxed": 1.75
+    }
+  },
+  "spacing": {
+    "unit": "0.25rem",
+    "scale": [0, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64]
+  },
+  "borderRadius": {
+    "sm": "0.25rem",
+    "md": "0.5rem",
+    "lg": "1rem",
+    "full": "9999px"
+  },
+  "shadows": {
+    "sm": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    "md": "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+    "lg": "0 10px 15px -3px rgb(0 0 0 / 0.1)"
+  }
+}

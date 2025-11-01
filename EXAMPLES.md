@@ -475,6 +475,234 @@ function formatDate(dateString) {
 }
 ```
 
+## 🔌 Работа с плагинами
+
+### Установка и активация плагина
+
+```javascript
+// Установить плагин
+const plugin = await fetch('/api/plugins', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'Contact Form',
+    slug: 'contact-form',
+    version: '1.0.0',
+    description: 'Add contact forms to your site',
+    author: 'SiteBuilder'
+  })
+}).then(r => r.json());
+
+// Активировать плагин
+await fetch(`/api/plugins/${plugin.id}/activate`, {
+  method: 'POST'
+});
+```
+
+### Использование хуков в плагине
+
+```javascript
+// В плагине
+api.addAction('form_submit', async (formData) => {
+  // Отправить email
+  await sendEmail({
+    to: 'admin@example.com',
+    subject: 'New contact form submission',
+    body: JSON.stringify(formData)
+  });
+});
+
+// В приложении
+import { doAction } from '@/lib/plugin-system';
+
+await doAction('form_submit', {
+  name: 'John Doe',
+  email: 'john@example.com',
+  message: 'Hello!'
+});
+```
+
+### Регистрация пользовательского блока
+
+```javascript
+// В плагине
+api.registerBlock({
+  type: 'custom-cta',
+  label: 'Custom CTA',
+  icon: '🎯',
+  category: 'marketing',
+  defaultContent: {
+    title: 'Join Us Today',
+    subtitle: 'Get started in minutes',
+    buttonText: 'Sign Up',
+    buttonLink: '/signup'
+  }
+});
+```
+
+### Использование фильтров
+
+```javascript
+// Добавить фильтр
+api.addFilter('page_title', (title, pageId) => {
+  return title.toUpperCase();
+});
+
+// Применить фильтр
+import { applyFilters } from '@/lib/plugin-system';
+
+const title = await applyFilters('page_title', 'My Page', pageId);
+// Результат: "MY PAGE"
+```
+
+## 🎨 Работа с темами
+
+### Получение списка тем
+
+```javascript
+const themes = await fetch('/api/themes')
+  .then(r => r.json());
+
+console.log(themes);
+```
+
+### Активация темы
+
+```javascript
+await fetch(`/api/themes/modern/activate?siteId=${siteId}`, {
+  method: 'POST'
+});
+```
+
+### Использование CSS переменных темы
+
+```javascript
+// В React компоненте
+function MyComponent() {
+  return (
+    <div style={{
+      backgroundColor: 'var(--color-primary)',
+      color: 'var(--color-foreground)',
+      padding: 'var(--spacing-4)',
+      borderRadius: 'var(--border-radius-md)',
+      boxShadow: 'var(--shadow-md)',
+      fontFamily: 'var(--font-family-body)'
+    }}>
+      Styled with theme variables
+    </div>
+  );
+}
+```
+
+### Создание пользовательской темы
+
+```javascript
+// themes/my-theme/theme.json
+{
+  "name": "My Custom Theme",
+  "slug": "my-theme",
+  "version": "1.0.0",
+  "author": "Your Name",
+  "description": "A custom theme",
+  "colors": {
+    "primary": "#FF6B6B",
+    "secondary": "#4ECDC4",
+    "background": "#FFFFFF",
+    "foreground": "#2C3E50"
+  },
+  "typography": {
+    "fontFamily": {
+      "heading": "'Montserrat', sans-serif",
+      "body": "'Open Sans', sans-serif"
+    },
+    "fontSize": {
+      "base": "16px",
+      "scale": 1.2
+    },
+    "lineHeight": {
+      "tight": 1.2,
+      "normal": 1.6,
+      "relaxed": 1.8
+    }
+  },
+  "spacing": {
+    "unit": "0.25rem",
+    "scale": [0, 1, 2, 3, 4, 6, 8, 12, 16, 24]
+  },
+  "borderRadius": {
+    "sm": "4px",
+    "md": "8px",
+    "lg": "16px",
+    "full": "9999px"
+  }
+}
+```
+
+## 🚀 Продвинутые сценарии с плагинами
+
+### Создание формы обратной связи
+
+```javascript
+// Добавить блок контактной формы
+await fetch(`/api/pages/${pageId}/blocks`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    type: 'contact-form',
+    content: {
+      title: 'Contact Us',
+      fields: [
+        { name: 'name', label: 'Name', type: 'text', required: true },
+        { name: 'email', label: 'Email', type: 'email', required: true },
+        { name: 'phone', label: 'Phone', type: 'text', required: false },
+        { name: 'message', label: 'Message', type: 'textarea', required: true }
+      ],
+      submitText: 'Send Message',
+      successMessage: 'Thank you! We will contact you soon.',
+      recipientEmail: 'contact@example.com'
+    },
+    order: 0
+  })
+});
+```
+
+### Добавление секции отзывов
+
+```javascript
+// Добавить блок с отзывами
+await fetch(`/api/pages/${pageId}/blocks`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    type: 'testimonials',
+    content: {
+      title: 'What Our Clients Say',
+      testimonials: [
+        {
+          id: '1',
+          content: 'Excellent service! Highly recommend.',
+          author: 'Alice Johnson',
+          role: 'CEO, TechCorp',
+          avatar: 'https://example.com/alice.jpg',
+          rating: 5
+        },
+        {
+          id: '2',
+          content: 'Great experience from start to finish.',
+          author: 'Bob Smith',
+          role: 'Founder, StartupXYZ',
+          avatar: 'https://example.com/bob.jpg',
+          rating: 5
+        }
+      ],
+      layout: 'grid',
+      columns: 2
+    },
+    order: 1
+  })
+});
+```
+
 ---
 
-Больше примеров в [документации API](./API.md).
+Больше примеров в [документации API](./API.md) и [документации плагинов](./PLUGIN_THEME_SYSTEM.md).

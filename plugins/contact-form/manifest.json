@@ -1,0 +1,13 @@
+{
+  "name": "Contact Form",
+  "slug": "contact-form",
+  "version": "1.0.0",
+  "description": "Add customizable contact forms to your site",
+  "author": "SiteBuilder",
+  "homepage": "https://sitebuilder.example.com/plugins/contact-form",
+  "license": "MIT",
+  "requires": {
+    "core": ">=0.1.0"
+  },
+  "entryPoint": "index.ts"
+}
