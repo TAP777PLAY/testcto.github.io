@@ -24,4 +24,4 @@ npm run start
 
 ## Контакты
 
-Email: arsenrenok31@gmail.com
+Email: tap777play@gmail.com
