@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sitebuilder-config
+  namespace: production
+data:
+  nextauth-url: "https://yourdomain.com"
+  app-url: "https://yourdomain.com"
+  node-env: "production"

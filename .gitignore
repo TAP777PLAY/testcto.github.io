@@ -31,7 +31,13 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging
+.env.production
 
 # vercel
 .vercel
@@ -41,3 +47,40 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# Docker volumes data
+postgres_data/
+redis_data/
+postgres_dev_data/
+redis_dev_data/
+postgres_staging_data/
+redis_staging_data/
+postgres_prod_data/
+redis_prod_data/
+prometheus_data/
+grafana_data/
+
+# SSL certificates
+nginx/ssl/*.pem
+nginx/ssl/*.key
+nginx/ssl/*.crt
+
+# Backups
+backups/
+*.sql
+*.sql.gz
+
+# Monitoring data
+monitoring/grafana/data/
+monitoring/prometheus/data/
+
+# Performance results
+performance-results/
+
+# Logs
+logs/
+*.log
+
+# Kubernetes secrets
+k8s/*-secrets.yml
+!k8s/secrets-example.yml
