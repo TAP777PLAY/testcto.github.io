@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import NotificationBell from '@/components/NotificationBell';
 
 type Site = {
   id: string;
@@ -89,6 +90,15 @@ export default function Dashboard() {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Мои сайты</h1>
             <div className="flex items-center gap-4">
+              {(session?.user as any)?.role === 'admin' && (
+                <Link
+                  href="/admin"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  🔧 Admin Panel
+                </Link>
+              )}
+              <NotificationBell />
               <span className="text-gray-600">{session?.user?.name || session?.user?.email}</span>
               <button
                 onClick={() => setShowCreateModal(true)}
@@ -137,9 +147,13 @@ export default function Dashboard() {
                   >
                     Редактировать
                   </Link>
-                  <button className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">
+                  <Link
+                    href={`/sites/${site.id}/settings`}
+                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                    title="Настройки сайта"
+                  >
                     ⚙️
-                  </button>
+                  </Link>
                 </div>
               </div>
             ))}

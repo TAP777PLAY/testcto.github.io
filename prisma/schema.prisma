@@ -8,18 +8,20 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?        @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  role          String    @default("user")
+  role          String         @default("user")
   accounts      Account[]
   sessions      Session[]
   sites         Site[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  activityLogs  ActivityLog[]
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model Account {
@@ -58,34 +60,36 @@ model VerificationToken {
 }
 
 model Site {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String?
-  favicon     String?
-  logo        String?
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pages       Page[]
-  theme       Theme?
-  published   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  description  String?
+  favicon      String?
+  logo         String?
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pages        Page[]
+  theme        Theme?
+  settings     SiteSettings?
+  published    Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model Page {
-  id        String   @id @default(cuid())
-  title     String
-  slug      String
-  siteId    String
-  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  blocks    Block[]
-  published Boolean  @default(false)
-  isHome    Boolean  @default(false)
-  metaTitle String?
+  id              String     @id @default(cuid())
+  title           String
+  slug            String
+  siteId          String
+  site            Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  blocks          Block[]
+  published       Boolean    @default(false)
+  isHome          Boolean    @default(false)
+  metaTitle       String?
   metaDescription String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  pageViews       PageView[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   @@unique([siteId, slug])
 }
@@ -124,4 +128,77 @@ model Template {
   blocks      Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model SiteSettings {
+  id              String   @id @default(cuid())
+  siteId          String   @unique
+  site            Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String?
+  ogImage         String?
+  googleAnalytics String?
+  facebookPixel   String?
+  customCSS       String?  @db.Text
+  customJS        String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  type      String
+  size      Int
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model PageView {
+  id        String   @id @default(cuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  ipAddress String?
+  userAgent String?
+  referrer  String?
+  createdAt DateTime @default(now())
+
+  @@index([pageId])
+  @@index([createdAt])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  entity    String
+  entityId  String?
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([entity, entityId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([createdAt])
 }
