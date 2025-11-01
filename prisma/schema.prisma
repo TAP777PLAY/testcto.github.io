@@ -8,18 +8,19 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?    @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  role          String    @default("user")
+  role          String     @default("user")
   accounts      Account[]
   sessions      Session[]
   sites         Site[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  feedback      Feedback[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }
 
 model Account {
@@ -122,6 +123,22 @@ model Template {
   preview     String?
   category    String
   blocks      Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Feedback {
+  id          String   @id @default(cuid())
+  type        String
+  title       String
+  description String   @db.Text
+  email       String?
+  url         String?
+  screenshot  String?  @db.Text
+  status      String   @default("new")
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userAgent   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
