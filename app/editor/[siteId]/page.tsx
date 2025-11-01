@@ -3,8 +3,8 @@
 import { use, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import BlockEditor, { Block } from '@/components/BlockEditor';
-import Link from 'next/link';
+import { PageBuilder } from '@/components/PageBuilder/PageBuilder';
+import { Block } from '@/components/BlockEditor';
 
 type Page = {
   id: string;
@@ -21,6 +21,25 @@ type Site = {
   pages: Page[];
 };
 
+const getDefaultContent = (type: string) => {
+  const defaults: Record<string, any> = {
+    heading: { text: 'Новый заголовок', level: 'h2', styles: {} },
+    text: { text: 'Новый текстовый блок', styles: {} },
+    image: { url: '', alt: '', width: '100%', styles: {} },
+    gallery: { images: [], columns: 3, styles: {} },
+    button: { text: 'Кнопка', link: '#', style: 'primary', styles: {} },
+    form: { 
+      title: 'Новая форма',
+      fields: [],
+      submitText: 'Отправить',
+      styles: {}
+    },
+    divider: { thickness: '1px', style: 'solid', styles: {} },
+    spacer: { height: '40px', styles: {} },
+  };
+  return defaults[type] || { styles: {} };
+};
+
 export default function EditorPage({ params }: { params: Promise<{ siteId: string }> }) {
   const resolvedParams = use(params);
   const { status } = useSession();
@@ -28,7 +47,6 @@ export default function EditorPage({ params }: { params: Promise<{ siteId: strin
   const [site, setSite] = useState<Site | null>(null);
   const [currentPage, setCurrentPage] = useState<Page | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -44,7 +62,9 @@ export default function EditorPage({ params }: { params: Promise<{ siteId: strin
       if (response.ok) {
         const data = await response.json();
         setSite(data);
-        setCurrentPage(data.pages[0]);
+        if (data.pages && data.pages.length > 0) {
+          setCurrentPage(data.pages[0]);
+        }
       } else {
         alert('Сайт не найден');
         router.push('/dashboard');
@@ -56,11 +76,8 @@ export default function EditorPage({ params }: { params: Promise<{ siteId: strin
     }
   };
 
-  const handleUpdateBlocks = async (blocks: Block[]) => {
+  const handleSave = async (blocks: Block[]) => {
     if (!currentPage) return;
-    
-    setCurrentPage({ ...currentPage, blocks });
-    setSaving(true);
 
     try {
       await fetch(`/api/pages/${currentPage.id}/blocks`, {
@@ -72,21 +89,14 @@ export default function EditorPage({ params }: { params: Promise<{ siteId: strin
       });
     } catch (error) {
       console.error('Ошибка сохранения блоков:', error);
-      alert('Не удалось сохранить изменения');
-    } finally {
-      setSaving(false);
     }
   };
 
-  const handleAddBlock = async (type: string) => {
-    if (!currentPage) return;
+  const handleAddBlock = async (type: string): Promise<Block> => {
+    if (!currentPage) throw new Error('No page selected');
 
-    const defaultContent = {
-      heading: { text: 'Новый заголовок', level: 'h2' },
-      text: { text: 'Новый текстовый блок' },
-      image: { url: '', alt: '' },
-      button: { text: 'Кнопка', link: '#', style: 'primary' },
-    };
+    const order = currentPage.blocks.length;
+    const content = getDefaultContent(type);
 
     try {
       const response = await fetch(`/api/pages/${currentPage.id}/blocks`, {
@@ -94,11 +104,7 @@ export default function EditorPage({ params }: { params: Promise<{ siteId: strin
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          type,
-          content: defaultContent[type as keyof typeof defaultContent],
-          order: currentPage.blocks.length,
-        }),
+        body: JSON.stringify({ type, content, order }),
       });
 
       if (response.ok) {
@@ -107,10 +113,13 @@ export default function EditorPage({ params }: { params: Promise<{ siteId: strin
           ...currentPage,
           blocks: [...currentPage.blocks, newBlock],
         });
+        return newBlock;
+      } else {
+        throw new Error('Failed to create block');
       }
     } catch (error) {
       console.error('Ошибка добавления блока:', error);
-      alert('Не удалось добавить блок');
+      throw error;
     }
   };
 
@@ -130,99 +139,37 @@ export default function EditorPage({ params }: { params: Promise<{ siteId: strin
       }
     } catch (error) {
       console.error('Ошибка удаления блока:', error);
-      alert('Не удалось удалить блок');
-    }
-  };
-
-  const handlePublishPage = async () => {
-    if (!currentPage) return;
-
-    try {
-      const response = await fetch(`/api/pages/${currentPage.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...currentPage,
-          published: !currentPage.published,
-        }),
-      });
-
-      if (response.ok) {
-        const updatedPage = await response.json();
-        setCurrentPage(updatedPage);
-      }
-    } catch (error) {
-      console.error('Ошибка публикации:', error);
-      alert('Не удалось изменить статус публикации');
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Загрузка редактора...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <div className="text-xl text-gray-600">Загрузка редактора...</div>
+        </div>
       </div>
     );
   }
 
   if (!site || !currentPage) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Сайт не найден</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="text-6xl mb-4">😕</div>
+          <div className="text-xl text-gray-600">Сайт не найден</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="text-blue-600 hover:text-blue-800">
-                ← Назад
-              </Link>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">{site.name}</h1>
-                <p className="text-sm text-gray-500">{currentPage.title}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {saving && <span className="text-sm text-gray-500">Сохранение...</span>}
-              <button
-                onClick={handlePublishPage}
-                className={`px-4 py-2 rounded ${
-                  currentPage.published
-                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    : 'bg-green-600 text-white hover:bg-green-700'
-                }`}
-              >
-                {currentPage.published ? '✓ Опубликовано' : 'Опубликовать'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-2">Редактор страницы</h2>
-            <p className="text-gray-600">
-              Добавляйте и редактируйте блоки, перетаскивайте их для изменения порядка
-            </p>
-          </div>
-
-          <BlockEditor
-            blocks={currentPage.blocks}
-            onUpdateBlocks={handleUpdateBlocks}
-            onAddBlock={handleAddBlock}
-            onDeleteBlock={handleDeleteBlock}
-          />
-        </div>
-      </div>
-    </div>
+    <PageBuilder
+      initialBlocks={currentPage.blocks}
+      onSave={handleSave}
+      onAddBlock={handleAddBlock}
+      onDeleteBlock={handleDeleteBlock}
+    />
   );
 }

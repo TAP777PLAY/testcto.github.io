@@ -21,6 +21,7 @@ type BlockEditorProps = {
 
 export default function BlockEditor({ blocks, onUpdateBlocks, onAddBlock, onDeleteBlock }: BlockEditorProps) {
   const [editingBlock, setEditingBlock] = useState<string | null>(null);
+  const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -91,6 +92,8 @@ export default function BlockEditor({ blocks, onUpdateBlocks, onAddBlock, onDele
                 onUpdate={handleUpdateBlock}
                 onDelete={onDeleteBlock}
                 onStopEditing={() => setEditingBlock(null)}
+                onSelect={() => setSelectedBlock(block.id)}
+                isSelected={selectedBlock === block.id}
               />
             ))}
           </div>
