@@ -1,0 +1,760 @@
+openapi: 3.0.3
+info:
+  title: SiteBuilder CMS API
+  description: REST API для управления сайтами, страницами, постами и медиафайлами
+  version: 1.0.0
+  contact:
+    name: SiteBuilder Support
+    url: https://github.com/sitebuilder/sitebuilder
+
+servers:
+  - url: http://localhost:3000/api
+    description: Локальный сервер разработки
+  - url: https://your-domain.com/api
+    description: Production сервер
+
+tags:
+  - name: Authentication
+    description: Аутентификация пользователей
+  - name: Sites
+    description: Управление сайтами
+  - name: Pages
+    description: Управление страницами
+  - name: Blocks
+    description: Управление блоками контента
+  - name: Posts
+    description: Управление постами
+  - name: Media
+    description: Управление медиафайлами
+  - name: Templates
+    description: Шаблоны страниц
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Описание ошибки
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [ADMIN, EDITOR, VIEWER]
+
+    Site:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+          nullable: true
+        published:
+          type: boolean
+        userId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Page:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        published:
+          type: boolean
+        isHome:
+          type: boolean
+        metaTitle:
+          type: string
+          nullable: true
+        metaDescription:
+          type: string
+          nullable: true
+        siteId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Block:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [heading, text, image, button]
+        content:
+          type: object
+        order:
+          type: integer
+        pageId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        content:
+          type: string
+        excerpt:
+          type: string
+          nullable: true
+        coverImage:
+          type: string
+          nullable: true
+        published:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        metaTitle:
+          type: string
+          nullable: true
+        metaDescription:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        authorId:
+          type: string
+        siteId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Media:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        fileName:
+          type: string
+        url:
+          type: string
+        type:
+          type: string
+          enum: [IMAGE, VIDEO, DOCUMENT]
+        mimeType:
+          type: string
+        size:
+          type: integer
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
+        alt:
+          type: string
+          nullable: true
+        caption:
+          type: string
+          nullable: true
+        userId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Регистрация нового пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+      responses:
+        '201':
+          description: Пользователь успешно создан
+        '400':
+          description: Некорректные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sites:
+    get:
+      tags:
+        - Sites
+      summary: Получить список сайтов пользователя
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Список сайтов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Site'
+        '401':
+          description: Не авторизован
+    
+    post:
+      tags:
+        - Sites
+      summary: Создать новый сайт
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - slug
+              properties:
+                name:
+                  type: string
+                slug:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Сайт успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+        '400':
+          description: Некорректные данные
+        '401':
+          description: Не авторизован
+
+  /sites/{siteId}:
+    get:
+      tags:
+        - Sites
+      summary: Получить сайт по ID
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Данные сайта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+        '401':
+          description: Не авторизован
+        '404':
+          description: Сайт не найден
+    
+    put:
+      tags:
+        - Sites
+      summary: Обновить сайт
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                slug:
+                  type: string
+                description:
+                  type: string
+                published:
+                  type: boolean
+      responses:
+        '200':
+          description: Сайт успешно обновлен
+        '401':
+          description: Не авторизован
+        '404':
+          description: Сайт не найден
+    
+    delete:
+      tags:
+        - Sites
+      summary: Удалить сайт
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Сайт успешно удален
+        '401':
+          description: Не авторизован
+        '404':
+          description: Сайт не найден
+
+  /posts:
+    get:
+      tags:
+        - Posts
+      summary: Получить список постов
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: siteId
+          in: query
+          schema:
+            type: string
+        - name: published
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Список постов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Post'
+        '401':
+          description: Не авторизован
+    
+    post:
+      tags:
+        - Posts
+      summary: Создать новый пост
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - slug
+                - content
+              properties:
+                title:
+                  type: string
+                slug:
+                  type: string
+                content:
+                  type: string
+                excerpt:
+                  type: string
+                coverImage:
+                  type: string
+                published:
+                  type: boolean
+                publishedAt:
+                  type: string
+                  format: date-time
+                metaTitle:
+                  type: string
+                metaDescription:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                siteId:
+                  type: string
+      responses:
+        '201':
+          description: Пост успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '400':
+          description: Некорректные данные
+        '401':
+          description: Не авторизован
+        '403':
+          description: Недостаточно прав
+
+  /posts/{postId}:
+    get:
+      tags:
+        - Posts
+      summary: Получить пост по ID
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Данные поста
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '401':
+          description: Не авторизован
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Пост не найден
+    
+    put:
+      tags:
+        - Posts
+      summary: Обновить пост
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                slug:
+                  type: string
+                content:
+                  type: string
+                excerpt:
+                  type: string
+                coverImage:
+                  type: string
+                published:
+                  type: boolean
+                publishedAt:
+                  type: string
+                  format: date-time
+                metaTitle:
+                  type: string
+                metaDescription:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                siteId:
+                  type: string
+      responses:
+        '200':
+          description: Пост успешно обновлен
+        '401':
+          description: Не авторизован
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Пост не найден
+    
+    delete:
+      tags:
+        - Posts
+      summary: Удалить пост
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Пост успешно удален
+        '401':
+          description: Не авторизован
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Пост не найден
+
+  /media:
+    get:
+      tags:
+        - Media
+      summary: Получить список медиафайлов
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [IMAGE, VIDEO, DOCUMENT]
+      responses:
+        '200':
+          description: Список медиафайлов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Media'
+        '401':
+          description: Не авторизован
+    
+    post:
+      tags:
+        - Media
+      summary: Загрузить медиафайл
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - fileName
+                - url
+                - type
+                - mimeType
+                - size
+              properties:
+                name:
+                  type: string
+                fileName:
+                  type: string
+                url:
+                  type: string
+                type:
+                  type: string
+                  enum: [IMAGE, VIDEO, DOCUMENT]
+                mimeType:
+                  type: string
+                size:
+                  type: integer
+                width:
+                  type: integer
+                height:
+                  type: integer
+                alt:
+                  type: string
+                caption:
+                  type: string
+      responses:
+        '201':
+          description: Медиафайл успешно загружен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Media'
+        '400':
+          description: Некорректные данные
+        '401':
+          description: Не авторизован
+        '403':
+          description: Недостаточно прав
+
+  /media/{mediaId}:
+    get:
+      tags:
+        - Media
+      summary: Получить медиафайл по ID
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: mediaId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Данные медиафайла
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Media'
+        '401':
+          description: Не авторизован
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Медиафайл не найден
+    
+    put:
+      tags:
+        - Media
+      summary: Обновить медиафайл
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: mediaId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                alt:
+                  type: string
+                caption:
+                  type: string
+      responses:
+        '200':
+          description: Медиафайл успешно обновлен
+        '401':
+          description: Не авторизован
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Медиафайл не найден
+    
+    delete:
+      tags:
+        - Media
+      summary: Удалить медиафайл
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: mediaId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Медиафайл успешно удален
+        '401':
+          description: Не авторизован
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Медиафайл не найден
+
+  /templates:
+    get:
+      tags:
+        - Templates
+      summary: Получить список шаблонов
+      responses:
+        '200':
+          description: Список шаблонов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    description:
+                      type: string
+                    preview:
+                      type: string
+                    category:
+                      type: string
+                    blocks:
+                      type: array

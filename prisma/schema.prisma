@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -14,10 +20,12 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
-  role          String    @default("user")
+  role          Role      @default(VIEWER)
   accounts      Account[]
   sessions      Session[]
   sites         Site[]
+  posts         Post[]
+  media         Media[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -124,4 +132,49 @@ model Template {
   blocks      Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Post {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String
+  content         String   @db.Text
+  excerpt         String?
+  coverImage      String?
+  published       Boolean  @default(false)
+  publishedAt     DateTime?
+  metaTitle       String?
+  metaDescription String?
+  tags            String[]
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  siteId          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([slug, siteId])
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+model Media {
+  id          String    @id @default(cuid())
+  name        String
+  fileName    String
+  url         String
+  type        MediaType
+  mimeType    String
+  size        Int
+  width       Int?
+  height      Int?
+  alt         String?
+  caption     String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
