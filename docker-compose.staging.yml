@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sitebuilder-postgres-staging
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: sitebuilder_staging
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  app:
+    image: ${IMAGE_NAME:-sitebuilder:latest}
+    container_name: sitebuilder-app-staging
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: "postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/sitebuilder_staging?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      NEXTAUTH_URL: "${NEXTAUTH_URL}"
+      NEXTAUTH_SECRET: "${NEXTAUTH_SECRET}"
+      NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL}"
+      NODE_ENV: "production"
+      SENTRY_DSN: "${SENTRY_DSN}"
+      SENTRY_ENVIRONMENT: "staging"
+    ports:
+      - "3000:3000"
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: sitebuilder-redis-staging
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_staging_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis}
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    container_name: sitebuilder-nginx-staging
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/staging.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    restart: always
+
+volumes:
+  postgres_staging_data:
+  redis_staging_data:

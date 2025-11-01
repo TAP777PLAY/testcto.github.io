@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sitebuilder-app
+  namespace: production
+  labels:
+    app: sitebuilder
+    component: app
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: sitebuilder
+      component: app
+  template:
+    metadata:
+      labels:
+        app: sitebuilder
+        component: app
+    spec:
+      containers:
+      - name: app
+        image: ghcr.io/yourorg/sitebuilder:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: sitebuilder-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: sitebuilder-secrets
+              key: redis-url
+        - name: NEXTAUTH_URL
+          valueFrom:
+            configMapKeyRef:
+              name: sitebuilder-config
+              key: nextauth-url
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: sitebuilder-secrets
+              key: nextauth-secret
+        - name: NEXT_PUBLIC_APP_URL
+          valueFrom:
+            configMapKeyRef:
+              name: sitebuilder-config
+              key: app-url
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: sitebuilder-secrets
+              key: sentry-dsn
+        - name: SENTRY_ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      imagePullSecrets:
+      - name: ghcr-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sitebuilder-app
+  namespace: production
+  labels:
+    app: sitebuilder
+    component: app
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: sitebuilder
+    component: app
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sitebuilder-app
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sitebuilder-app
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

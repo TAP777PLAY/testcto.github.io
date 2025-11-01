@@ -8,7 +8,17 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:migrate": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up",
+    "docker:staging": "docker-compose -f docker-compose.staging.yml up",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up -d",
+    "docker:build": "docker build -t sitebuilder:latest .",
+    "docker:logs": "docker-compose logs -f",
+    "docker:down": "docker-compose down",
+    "health": "curl -f http://localhost:3000/api/health || exit 1",
+    "typecheck": "tsc --noEmit"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
