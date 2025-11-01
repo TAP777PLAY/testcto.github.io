@@ -68,6 +68,7 @@ model Site {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   pages       Page[]
   theme       Theme?
+  plugins     Plugin[]
   published   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -124,4 +125,22 @@ model Template {
   blocks      Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Plugin {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  version     String
+  author      String?
+  active      Boolean  @default(false)
+  config      Json?
+  siteId      String?
+  site        Site?    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([siteId])
+  @@index([slug])
 }

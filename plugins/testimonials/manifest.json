@@ -1,0 +1,13 @@
+{
+  "name": "Testimonials",
+  "slug": "testimonials",
+  "version": "1.0.0",
+  "description": "Display customer testimonials and reviews on your site",
+  "author": "SiteBuilder",
+  "homepage": "https://sitebuilder.example.com/plugins/testimonials",
+  "license": "MIT",
+  "requires": {
+    "core": ">=0.1.0"
+  },
+  "entryPoint": "index.ts"
+}
