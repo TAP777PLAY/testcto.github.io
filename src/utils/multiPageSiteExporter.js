@@ -7791,6 +7791,8 @@ const generateHeaderJS = (siteData) => {
   // Выбираем формат шапки
   if (format === 'minimal') {
     return generateMinimalHeaderJSForMultipage(siteData);
+  } else if (format === 'aurora') {
+    return generateAuroraHeaderJSForMultipage(siteData);
   } else {
     return generateClassicHeaderJSForMultipage(siteData);
   }
@@ -9069,6 +9071,438 @@ const generateMinimalHeaderJSForMultipage = (siteData) => {
   window.initSiteHeader = init;
 })();
 `;
+};
+
+// Генерация шапки Aurora для многостраничного экспорта
+const generateAuroraHeaderJSForMultipage = (siteData) => {
+  const headerData = siteData.headerData || {};
+  const siteName = headerData.siteName || 'My Site';
+  const sectionsArray = Object.entries(siteData.sectionsData || {});
+  
+  // Генерируем навигационные ссылки
+  let navigationLinks = '';
+  
+  if (headerData.menuItems && headerData.menuItems.length > 0) {
+    navigationLinks = headerData.menuItems.map(item => {
+      const sectionData = sectionsArray.find(([sectionId, data]) => data?.id === item.id)?.[1];
+      let url = '#';
+      
+      if (sectionData) {
+        const fileName = getSectionFileName(item.id, sectionData);
+        url = fileName ? fileName + '.html' : '#';
+      } else if (item.url && item.url !== '#') {
+        url = item.url;
+      }
+      
+      const text = item.text || item.title || '';
+      return '<li><a href="' + url + '" class="aurora-nav-link">' + text + '</a></li>';
+    }).join('');
+  } else {
+    // Fallback: используем секции
+    navigationLinks = sectionsArray.map(([sectionId, sectionData]) => {
+      const isAgeVerification = sectionId === 'age-verification' || 
+                                sectionId === 'проверка возраста' ||
+                                sectionData.title?.toLowerCase().includes('подтверждение возраста') ||
+                                sectionData.title?.toLowerCase().includes('проверка возраста') ||
+                                sectionData.title?.toLowerCase().includes('age verification');
+      
+      if (isAgeVerification) {
+        return '';
+      }
+      
+      const fileName = getSectionFileName(sectionId, sectionData);
+      const displayName = getSectionDisplayName(sectionId, sectionData);
+      
+      return fileName ? '<li><a href="' + fileName + '.html" class="aurora-nav-link">' + displayName + '</a></li>' : '';
+    }).filter(link => link).join('');
+  }
+  
+  // Добавляем контакты
+  if (siteData.contactData) {
+    const contactFileName = getContactFileName(siteData.contactData);
+    const contactTitle = siteData.contactData?.title || 'Контакты';
+    navigationLinks += '<li><a href="' + contactFileName + '.html" class="aurora-nav-link aurora-accent-link">' + contactTitle + '</a></li>';
+  }
+
+  return \`// 🌟 Шапка Aurora - Навигация слева, логотип справа
+// Десктоп: навигация слева, логотип справа
+// Мобильная: логотип слева, гамбургер-меню справа
+
+(function() {
+  'use strict';
+  
+  function injectHeaderStyles() {
+    if (document.getElementById('aurora-header-styles')) {
+      return;
+    }
+
+    const style = document.createElement('style');
+    style.id = 'aurora-header-styles';
+    style.textContent = \\\`
+      /* Основной контейнер шапки */
+      .aurora-header {
+        background: \${headerData.backgroundColor || '#ffffff'};
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        position: sticky;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        padding: 1rem 2rem;
+      }
+
+      /* Контент шапки */
+      .aurora-header-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* Навигационное меню (слева на десктопе) */
+      .aurora-nav {
+        display: flex;
+        align-items: center;
+      }
+
+      .aurora-nav-list {
+        display: flex;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        gap: 2rem;
+      }
+
+      .aurora-nav-link {
+        color: \${headerData.linksColor || '#333333'};
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        position: relative;
+      }
+
+      .aurora-nav-link:hover {
+        color: \${headerData.titleColor || '#1976d2'};
+        background: rgba(25, 118, 210, 0.08);
+      }
+
+      .aurora-nav-link.active {
+        color: \${headerData.titleColor || '#1976d2'};
+        font-weight: 600;
+      }
+
+      /* Акцентная ссылка (обычно контакты) */
+      .aurora-accent-link {
+        background: \${headerData.titleColor || '#1976d2'};
+        color: #ffffff !important;
+        padding: 0.6rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+      }
+
+      .aurora-accent-link:hover {
+        background: \${headerData.linksColor || '#1565c0'};
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+      }
+
+      /* Логотип (справа на десктопе) */
+      .aurora-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        text-decoration: none;
+      }
+
+      .aurora-logo-icon {
+        width: 45px;
+        height: 45px;
+        background: linear-gradient(135deg, \${headerData.titleColor || '#1976d2'}, \${headerData.linksColor || '#1565c0'});
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: white;
+        box-shadow: 0 3px 10px rgba(25, 118, 210, 0.3);
+      }
+
+      .aurora-logo-text {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: \${headerData.titleColor || '#1976d2'};
+      }
+
+      /* Гамбургер кнопка (скрыта на десктопе) */
+      .aurora-hamburger {
+        display: none;
+        flex-direction: column;
+        gap: 5px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        z-index: 1002;
+      }
+
+      .aurora-hamburger span {
+        width: 25px;
+        height: 3px;
+        background: \${headerData.titleColor || '#1976d2'};
+        border-radius: 2px;
+        transition: all 0.3s ease;
+      }
+
+      .aurora-hamburger.active span:nth-child(1) {
+        transform: rotate(45deg) translateY(8px);
+      }
+
+      .aurora-hamburger.active span:nth-child(2) {
+        opacity: 0;
+      }
+
+      .aurora-hamburger.active span:nth-child(3) {
+        transform: rotate(-45deg) translateY(-8px);
+      }
+
+      /* Мобильное выпадающее меню */
+      .aurora-mobile-menu {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1001;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .aurora-mobile-menu.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .aurora-mobile-menu-content {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 80%;
+        max-width: 320px;
+        height: 100%;
+        background: \${headerData.backgroundColor || '#ffffff'};
+        box-shadow: -4px 0 20px rgba(0,0,0,0.2);
+        padding: 5rem 2rem 2rem;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        overflow-y: auto;
+      }
+
+      .aurora-mobile-menu.active .aurora-mobile-menu-content {
+        transform: translateX(0);
+      }
+
+      .aurora-mobile-nav-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .aurora-mobile-nav-list .aurora-nav-link {
+        display: block;
+        padding: 1rem 1.5rem;
+        font-size: 1.1rem;
+      }
+
+      /* Медиа запросы для мобильной версии */
+      @media (max-width: 768px) {
+        .aurora-header {
+          padding: 1rem 1.5rem;
+        }
+
+        .aurora-header-content {
+          flex-direction: row;
+        }
+
+        /* Скрываем десктопную навигацию */
+        .aurora-nav {
+          order: 2;
+        }
+
+        .aurora-nav-list {
+          display: none;
+        }
+
+        /* Показываем логотип слева */
+        .aurora-logo {
+          order: 1;
+        }
+
+        /* Показываем гамбургер */
+        .aurora-hamburger {
+          display: flex;
+        }
+
+        /* Показываем мобильное меню */
+        .aurora-mobile-menu {
+          display: block;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .aurora-header {
+          padding: 0.75rem 1rem;
+        }
+
+        .aurora-logo-icon {
+          width: 38px;
+          height: 38px;
+          font-size: 18px;
+        }
+
+        .aurora-logo-text {
+          font-size: 1.25rem;
+        }
+
+        .aurora-mobile-menu-content {
+          width: 85%;
+          padding: 4rem 1.5rem 1.5rem;
+        }
+      }
+    \\\`;
+    document.head.appendChild(style);
+  }
+
+  function renderHeader() {
+    const container = document.getElementById('site-header-container');
+    if (!container) {
+      console.warn('Aurora header container not found');
+      return;
+    }
+
+    const logoInitial = '\${siteName}'.charAt(0).toUpperCase();
+    
+    container.innerHTML = \\\`
+      <header class="aurora-header">
+        <div class="aurora-header-content">
+          <!-- Навигация (слева на десктопе) -->
+          <nav class="aurora-nav">
+            <ul class="aurora-nav-list">
+              \${navigationLinks}
+            </ul>
+            
+            <!-- Гамбургер кнопка (только мобильная) -->
+            <button class="aurora-hamburger" id="aurora-hamburger" aria-label="Меню">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+          </nav>
+
+          <!-- Логотип (справа на десктопе, слева на мобильной) -->
+          <a href="index.html" class="aurora-logo">
+            <div class="aurora-logo-icon">\${logoInitial}</div>
+            <span class="aurora-logo-text">\${siteName}</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- Мобильное выпадающее меню -->
+      <div class="aurora-mobile-menu" id="aurora-mobile-menu">
+        <div class="aurora-mobile-menu-content">
+          <nav>
+            <ul class="aurora-mobile-nav-list">
+              \${navigationLinks}
+            </ul>
+          </nav>
+        </div>
+      </div>
+    \\\`;
+  }
+
+  function initMobileMenu() {
+    const hamburger = document.getElementById('aurora-hamburger');
+    const mobileMenu = document.getElementById('aurora-mobile-menu');
+    const mobileLinks = document.querySelectorAll('.aurora-mobile-nav-list .aurora-nav-link');
+    
+    if (!hamburger || !mobileMenu) return;
+
+    // Открыть/закрыть меню
+    hamburger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hamburger.classList.toggle('active');
+      mobileMenu.classList.toggle('active');
+      document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : '';
+    });
+
+    // Закрыть при клике на overlay
+    mobileMenu.addEventListener('click', (e) => {
+      if (e.target === mobileMenu) {
+        hamburger.classList.remove('active');
+        mobileMenu.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    });
+
+    // Закрыть при клике на ссылку
+    mobileLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        hamburger.classList.remove('active');
+        mobileMenu.classList.remove('active');
+        document.body.style.overflow = '';
+      });
+    });
+
+    // Закрыть по Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && mobileMenu.classList.contains('active')) {
+        hamburger.classList.remove('active');
+        mobileMenu.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    });
+  }
+
+  function setActiveLink() {
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    const links = document.querySelectorAll('.aurora-nav-link');
+    
+    links.forEach(link => {
+      const href = link.getAttribute('href');
+      if (href === currentPage) {
+        link.classList.add('active');
+      }
+    });
+  }
+
+  function init() {
+    injectHeaderStyles();
+    renderHeader();
+    initMobileMenu();
+    setActiveLink();
+  }
+
+  // Инициализация при загрузке DOM
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  // Экспортируем функцию инициализации
+  window.initSiteHeader = init;
+})();
+\`;
 };
 
 // Генерация классической шапки для многостраничного экспорта (заглушка)
