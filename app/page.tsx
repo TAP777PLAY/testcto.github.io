@@ -6,6 +6,17 @@ export default function Home() {
       <header className="container mx-auto px-4 py-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-blue-600">SiteBuilder</h1>
+          <nav className="hidden md:flex space-x-6">
+            <Link href="/pricing" className="text-gray-700 hover:text-blue-600">
+              Тарифы
+            </Link>
+            <Link href="/marketplace" className="text-gray-700 hover:text-blue-600">
+              Маркетплейс
+            </Link>
+            <Link href="/dashboard" className="text-gray-700 hover:text-blue-600">
+              Возможности
+            </Link>
+          </nav>
           <div className="space-x-4">
             <Link
               href="/auth/signin"
@@ -75,8 +86,45 @@ export default function Home() {
           </div>
         </div>
 
+        <div className="mt-20 max-w-6xl mx-auto bg-gradient-to-r from-purple-50 to-blue-50 p-8 rounded-2xl">
+          <h3 className="text-3xl font-bold text-center mb-4">🚀 Новое: SaaS-платформа</h3>
+          <p className="text-center text-gray-600 mb-8">
+            Расширенные возможности для профессионалов и бизнеса
+          </p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <div className="text-3xl mb-3">🌐</div>
+              <h4 className="font-semibold mb-2">Мультисайтовость</h4>
+              <p className="text-sm text-gray-600">
+                Управляйте несколькими сайтами из одного аккаунта
+              </p>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <div className="text-3xl mb-3">💳</div>
+              <h4 className="font-semibold mb-2">Подписки</h4>
+              <p className="text-sm text-gray-600">
+                Гибкие тарифы с поддержкой Stripe и YooKassa
+              </p>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <div className="text-3xl mb-3">🛍️</div>
+              <h4 className="font-semibold mb-2">Маркетплейс</h4>
+              <p className="text-sm text-gray-600">
+                Плагины и темы для расширения функционала
+              </p>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <div className="text-3xl mb-3">🤖</div>
+              <h4 className="font-semibold mb-2">AI-помощник</h4>
+              <p className="text-sm text-gray-600">
+                Автоматическая генерация контента с помощью AI
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-20 max-w-6xl mx-auto">
-          <h3 className="text-3xl font-bold text-center mb-12">Возможности MVP</h3>
+          <h3 className="text-3xl font-bold text-center mb-12">Возможности платформы</h3>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="flex items-start space-x-3">
               <span className="text-green-500 text-xl">✓</span>
@@ -118,6 +166,20 @@ export default function Home() {
               <div>
                 <h4 className="font-semibold">Vercel Deploy</h4>
                 <p className="text-gray-600">Готовая интеграция с Vercel для хостинга</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <span className="text-green-500 text-xl">✓</span>
+              <div>
+                <h4 className="font-semibold">Свой домен</h4>
+                <p className="text-gray-600">Подключение собственного домена</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <span className="text-green-500 text-xl">✓</span>
+              <div>
+                <h4 className="font-semibold">AI генерация</h4>
+                <p className="text-gray-600">Создание контента с помощью искусственного интеллекта</p>
               </div>
             </div>
           </div>

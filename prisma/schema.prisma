@@ -8,18 +8,21 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  role          String    @default("user")
-  accounts      Account[]
-  sessions      Session[]
-  sites         Site[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id               String         @id @default(cuid())
+  name             String?
+  email            String?        @unique
+  emailVerified    DateTime?
+  image            String?
+  password         String?
+  role             String         @default("user")
+  accounts         Account[]
+  sessions         Session[]
+  sites            Site[]
+  subscription     Subscription?
+  stripeCustomerId String?        @unique
+  installations    Installation[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 }
 
 model Account {
@@ -64,11 +67,13 @@ model Site {
   description String?
   favicon     String?
   logo        String?
+  customDomain String?
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   pages       Page[]
   theme       Theme?
   published   Boolean  @default(false)
+  isMultisite Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -124,4 +129,138 @@ model Template {
   blocks      Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Subscription and Billing Models
+model Plan {
+  id              String         @id @default(cuid())
+  name            String         @unique
+  description     String?
+  price           Int            // Price in cents
+  currency        String         @default("USD")
+  interval        String         // month, year
+  stripePriceId   String?        @unique
+  features        Json           // Array of feature strings
+  maxSites        Int            @default(1)
+  maxPages        Int            @default(10)
+  customDomain    Boolean        @default(false)
+  aiCredits       Int            @default(0)
+  marketplaceAccess Boolean      @default(false)
+  priority        Int            @default(0)
+  active          Boolean        @default(true)
+  subscriptions   Subscription[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId               String
+  plan                 Plan     @relation(fields: [planId], references: [id])
+  stripeSubscriptionId String?  @unique
+  status               String   // active, canceled, past_due, trialing
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean  @default(false)
+  aiCreditsUsed        Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Payment {
+  id               String   @id @default(cuid())
+  userId           String
+  amount           Int      // Amount in cents
+  currency         String   @default("USD")
+  status           String   // succeeded, pending, failed
+  stripePaymentId  String?  @unique
+  description      String?
+  metadata         Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// Marketplace Models
+model MarketplacePlugin {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  description   String
+  longDescription String?      @db.Text
+  version       String
+  author        String
+  authorUrl     String?
+  price         Int            @default(0) // 0 = free, price in cents
+  icon          String?
+  screenshots   Json?          // Array of image URLs
+  category      String
+  tags          Json?          // Array of tags
+  downloadCount Int            @default(0)
+  rating        Float?
+  reviewCount   Int            @default(0)
+  config        Json           // Plugin configuration schema
+  code          String         @db.Text
+  active        Boolean        @default(true)
+  featured      Boolean        @default(false)
+  installations Installation[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model MarketplaceTheme {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  description   String
+  longDescription String?      @db.Text
+  version       String
+  author        String
+  authorUrl     String?
+  price         Int            @default(0) // 0 = free, price in cents
+  preview       String?
+  screenshots   Json?          // Array of image URLs
+  category      String
+  tags          Json?          // Array of tags
+  downloadCount Int            @default(0)
+  rating        Float?
+  reviewCount   Int            @default(0)
+  colors        Json           // Theme colors configuration
+  active        Boolean        @default(true)
+  featured      Boolean        @default(false)
+  installations Installation[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Installation {
+  id          String              @id @default(cuid())
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String              // plugin, theme
+  pluginId    String?
+  plugin      MarketplacePlugin?  @relation(fields: [pluginId], references: [id], onDelete: Cascade)
+  themeId     String?
+  theme       MarketplaceTheme?   @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  active      Boolean             @default(true)
+  config      Json?               // User-specific configuration
+  installedAt DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([userId, pluginId])
+  @@unique([userId, themeId])
+}
+
+// AI Content Generation
+model AIGenerationLog {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // text, image, page
+  prompt      String   @db.Text
+  result      String   @db.Text
+  creditsUsed Int      @default(1)
+  model       String?  // GPT-4, GPT-3.5, etc.
+  metadata    Json?
+  createdAt   DateTime @default(now())
 }
