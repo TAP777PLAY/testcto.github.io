@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [exportingSite, setExportingSite] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -71,6 +72,43 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Ошибка создания сайта:', error);
       alert('Произошла ошибка при создании сайта');
+    }
+  };
+
+  const handleExportSite = async (siteId: string, siteName: string) => {
+    setExportingSite(siteId);
+    
+    try {
+      const response = await fetch(`/api/sites/${siteId}/export`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          minify: true,
+          includeImages: true,
+        }),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${siteName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_export.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Ошибка при экспорте сайта');
+      }
+    } catch (error) {
+      console.error('Ошибка экспорта сайта:', error);
+      alert('Произошла ошибка при экспорте сайта');
+    } finally {
+      setExportingSite(null);
     }
   };
 
@@ -137,8 +175,17 @@ export default function Dashboard() {
                   >
                     Редактировать
                   </Link>
-                  <button className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">
-                    ⚙️
+                  <button
+                    onClick={() => handleExportSite(site.id, site.name)}
+                    disabled={exportingSite === site.id}
+                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Экспортировать сайт"
+                  >
+                    {exportingSite === site.id ? (
+                      <span className="inline-block animate-spin">⏳</span>
+                    ) : (
+                      '📦'
+                    )}
                   </button>
                 </div>
               </div>
