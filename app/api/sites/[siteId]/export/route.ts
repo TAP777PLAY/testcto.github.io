@@ -14,19 +14,36 @@ interface BlockContent {
   [key: string]: unknown;
 }
 
+interface PrismaBlock {
+  id: string;
+  type: string;
+  content: any; // Prisma JsonValue
+  order: number;
+}
+
 interface Block {
   id: string;
   type: string;
-  content: BlockContent;
+  content: BlockContent | null;
   order: number;
+}
+
+interface PrismaPage {
+  id: string;
+  title: string;
+  slug: string;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  isHome: boolean;
+  blocks: PrismaBlock[];
 }
 
 interface Page {
   id: string;
   title: string;
   slug: string;
-  metaTitle?: string;
-  metaDescription?: string;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
   isHome: boolean;
   blocks: Block[];
 }
@@ -34,18 +51,56 @@ interface Page {
 interface Theme {
   id: string;
   name: string;
-  primaryColor?: string;
-  secondaryColor?: string;
-  backgroundColor?: string;
-  textColor?: string;
-  fontFamily?: string;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  backgroundColor?: string | null;
+  textColor?: string | null;
+  fontFamily?: string | null;
+}
+
+interface PrismaSite {
+  id: string;
+  slug: string;
+  pages: PrismaPage[];
+  theme?: Theme | null;
 }
 
 interface Site {
   id: string;
   slug: string;
   pages: Page[];
-  theme?: Theme | null;
+  theme: Theme | null;
+}
+
+// Convert Prisma types to internal types
+function convertPrismaBlock(prismaBlock: PrismaBlock): Block {
+  return {
+    id: prismaBlock.id,
+    type: prismaBlock.type,
+    content: prismaBlock.content as BlockContent,
+    order: prismaBlock.order,
+  };
+}
+
+function convertPrismaPage(prismaPage: PrismaPage): Page {
+  return {
+    id: prismaPage.id,
+    title: prismaPage.title,
+    slug: prismaPage.slug,
+    metaTitle: prismaPage.metaTitle,
+    metaDescription: prismaPage.metaDescription,
+    isHome: prismaPage.isHome,
+    blocks: prismaPage.blocks.map(convertPrismaBlock),
+  };
+}
+
+function convertPrismaSite(prismaSite: PrismaSite): Site {
+  return {
+    id: prismaSite.id,
+    slug: prismaSite.slug,
+    pages: prismaSite.pages.map(convertPrismaPage),
+    theme: prismaSite.theme || null,
+  };
 }
 
 // Simple HTML minifier
@@ -260,6 +315,9 @@ img {
 // Generate HTML for blocks
 function generateBlocksHTML(blocks: Block[]): string {
   return blocks.map(block => {
+    if (!block.content) {
+      return '<div class="text-gray-400">Пустой блок</div>';
+    }
     const styles = block.content.styles || {};
     const styleString = Object.entries(styles)
       .map(([key, value]) => {
@@ -458,11 +516,14 @@ export async function POST(
       return NextResponse.json({ error: 'У сайта нет страниц' }, { status: 400 });
     }
 
+    // Convert Prisma types to internal types
+    const convertedSite = convertPrismaSite(site);
+
     // Create ZIP archive
     const zip = new JSZip();
 
     // Generate CSS
-    const themeCSS = generateThemeCSS(site.theme);
+    const themeCSS = generateThemeCSS(convertedSite.theme);
     const processedCSS = options.minify ? minifyCSS(themeCSS) : themeCSS;
     zip.file('styles.css', processedCSS);
 
@@ -471,8 +532,8 @@ export async function POST(
     zip.file('scripts.js', js);
 
     // Generate HTML files for each page
-    for (const page of site.pages) {
-      const html = generateHTMLPage(page, site, site.pages, themeCSS, options);
+    for (const page of convertedSite.pages) {
+      const html = generateHTMLPage(page, convertedSite, convertedSite.pages, themeCSS, options);
       const fileName = page.isHome ? 'index.html' : `${page.slug}.html`;
       zip.file(fileName, html);
     }
