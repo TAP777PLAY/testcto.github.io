@@ -63,16 +63,26 @@ export default function EditorPage({ params }: { params: Promise<{ siteId: strin
     setSaving(true);
 
     try {
-      await fetch(`/api/pages/${currentPage.id}/blocks`, {
+      const response = await fetch(`/api/pages/${currentPage.id}/blocks`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ blocks }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка сохранения');
+      }
+
+      const updatedBlocks = await response.json();
+      setCurrentPage({ ...currentPage, blocks: updatedBlocks });
     } catch (error) {
       console.error('Ошибка сохранения блоков:', error);
       alert('Не удалось сохранить изменения');
+      // Reload to get the correct state
+      await fetchSite();
     } finally {
       setSaving(false);
     }
@@ -101,13 +111,16 @@ export default function EditorPage({ params }: { params: Promise<{ siteId: strin
         }),
       });
 
-      if (response.ok) {
-        const newBlock = await response.json();
-        setCurrentPage({
-          ...currentPage,
-          blocks: [...currentPage.blocks, newBlock],
-        });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка добавления блока');
       }
+
+      const newBlock = await response.json();
+      setCurrentPage({
+        ...currentPage,
+        blocks: [...currentPage.blocks, newBlock],
+      });
     } catch (error) {
       console.error('Ошибка добавления блока:', error);
       alert('Не удалось добавить блок');
@@ -122,12 +135,15 @@ export default function EditorPage({ params }: { params: Promise<{ siteId: strin
         method: 'DELETE',
       });
 
-      if (response.ok) {
-        setCurrentPage({
-          ...currentPage,
-          blocks: currentPage.blocks.filter((b) => b.id !== blockId),
-        });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка удаления блока');
       }
+
+      setCurrentPage({
+        ...currentPage,
+        blocks: currentPage.blocks.filter((b) => b.id !== blockId),
+      });
     } catch (error) {
       console.error('Ошибка удаления блока:', error);
       alert('Не удалось удалить блок');
@@ -149,10 +165,13 @@ export default function EditorPage({ params }: { params: Promise<{ siteId: strin
         }),
       });
 
-      if (response.ok) {
-        const updatedPage = await response.json();
-        setCurrentPage(updatedPage);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка публикации');
       }
+
+      const updatedPage = await response.json();
+      setCurrentPage(updatedPage);
     } catch (error) {
       console.error('Ошибка публикации:', error);
       alert('Не удалось изменить статус публикации');

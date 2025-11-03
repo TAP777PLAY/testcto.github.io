@@ -89,15 +89,31 @@ export async function PUT(
           userId: (session.user as any).id,
         },
       },
+      include: {
+        blocks: true,
+      },
     });
 
     if (!page) {
       return NextResponse.json({ error: 'Страница не найдена' }, { status: 404 });
     }
 
+    // Verify all blocks belong to this page
+    const pageBlockIds = new Set(page.blocks.map((b) => b.id));
+    const invalidBlocks = blocks.filter((block: any) => !pageBlockIds.has(block.id));
+    
+    if (invalidBlocks.length > 0) {
+      return NextResponse.json(
+        { error: 'Некоторые блоки не принадлежат этой странице' },
+        { status: 400 }
+      );
+    }
+
     const updatePromises = blocks.map((block: any, index: number) =>
       prisma.block.update({
-        where: { id: block.id },
+        where: { 
+          id: block.id,
+        },
         data: {
           type: block.type,
           content: block.content,
